@@ -1,103 +1,235 @@
+"use client"
 import Image from "next/image";
+import { FolderUp , Download } from 'lucide-react';
+import { InputHTMLAttributes, useEffect, useRef, useState } from "react";
+import { randomUUID } from "crypto";
+import { buffer } from "stream/consumers";
+import { Progress } from "@/components/ui/progress";
+import toast, { Toaster } from 'react-hot-toast';
+import { useRouter } from "next/navigation";
 
-export default function Home() {
+
+function DropBox({ onChangeUp , onDrag , onDragEnter , onDragLeave , onDrop}: {onChangeUp: (e:React.ChangeEvent<HTMLInputElement>) => void , onDrag: React.ComponentState , onDragEnter:React.DragEventHandler , onDragLeave: React.DragEventHandler  , onDrop: React.DragEventHandler}){
+  const ref = useRef<HTMLInputElement>(null)
+ 
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  <div className={onDrag ? "bg-blue-300 w-[400px] h-[200px] rounded-lg flex items-center justify-center mx-auto" : "bg-gray-300 w-[400px] h-[200px] rounded-lg flex items-center justify-center mx-auto"} onClick={() => {
+    ref.current?.click()
+  }} onDragEnter={onDragEnter} onDragLeave={onDragLeave} onDrop={onDrop} onDragOver={(e) => {e.preventDefault()}}>
+    <div className="flex flex-col items-center" onDragEnter={(e) => {
+      onDragEnter(e)
+    }} onDragLeave={(e) => {
+      onDragLeave(e)
+    }} onDrop={(e) => {
+      onDrop(e)
+    }}>
+      <input type="file" className="hidden" id="fileInput" onChange={onChangeUp} ref={ref}  accept="*"  />
+      <FolderUp size={40}/>
+      <div className="mt-4">
+         <span className="text-gray-600 font-bold block text-center">Drag and drop your files here</span>
+      <span className="text-gray-600 font-bold block text-center">or click to upload</span>
+      </div>
+     
+    </div>
+  </div>)
+}
+export function DownloadComponent() {
+  const [id , setId] = useState("")
+  const router = useRouter()
+  function goToDownloadPage(){
+    router.push(`/${id}`)
+  }
+  useEffect(() => {
+    console.log("id value is", id)
+  } , [])
+  return (
+    <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
+      <h2 className="text-xl font-semibold text-gray-800 mb-4">Download File</h2>
+      
+      <div className="flex gap-3">
+        <input 
+          type="search" 
+          className="flex-1 px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500 text-gray-900" 
+          placeholder="Enter Download ID"
+          value={id}
+          onChange={(e) => {
+            console.log(e.target.value)
+              setId(e.target.value)
+              console.log("id value is", id)
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          }}
+        
+        />
+        <button className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 flex items-center gap-2 shadow-sm hover:shadow-md" onClick={() => {
+
+          if(id != ""){
+               goToDownloadPage()
+          }else{
+            toast("Please enter an id")
+          }
+        }}>
+          <Download size={18} />
+          Download
+        </button>
+      </div>
+      
+      <p className="text-sm text-gray-600 mt-3">
+        Enter your download ID to retrieve your file
+      </p>
+    </div>
+  );
+}
+export default function Home() {
+  const [isDragging , setIsDragging] = useState(false)
+  const [uploadState , setUploadState] = useState(0)
+  const notify = (message:string) => toast(message);
+
+  var fileBuffer:string
+  var fileName:String
+  var contentType:string = ""
+  function readFileToBase64(file:File){
+    return new Promise((resolve ,reject) => {
+        const fileReader = new FileReader()
+    fileReader.onload = () => {
+      const base64 = fileReader.result?.toString().split(',')[1]
+      console.log(base64)
+      resolve(base64)
+
+    }
+    fileReader.onerror = (e) => {
+      reject(e)
+    }
+    fileReader.readAsDataURL(file)
+    })
+  
+  }
+
+  const handleFileChange =  (e:React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault()
+    const file = e.target.files?.item(0)
+    const maxMB = 10
+    const oneMb =  1024 * 1024
+    if(file && file?.size > (maxMB * oneMb)){
+        notify("I'm going to go bankrupt bro , 10 MB max")
+      return
+    }
+    if(file){
+      fileName = file.name
+      contentType = file.type
+      
+      readFileToBase64(file).then((base64) => {
+
+        if(typeof base64 == "string"){
+              fileBuffer = base64
+
+        }
+      }).catch((e) => {
+        console.log(e)
+      })
+    }
+  }
+  const onDragEnter = (e:React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+      e.stopPropagation()
+          console.log("Enter")
+
+    setIsDragging(true)    
+  }
+   const onDragLeave =  (e:React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+        e.stopPropagation()
+    console.log("Leave")
+    if(e.target === e.currentTarget){
+            setIsDragging(false)    
+
+    }
+  }
+  const onDrop =  async (e:React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+        console.log("Drop")
+
+    e.stopPropagation()
+    
+    setIsDragging(false)
+    if(e.dataTransfer.files){
+      const data = e.dataTransfer.files.item(0)
+       const maxMB = 10
+    const oneMb =  1024 * 1024
+          contentType = data?.type || "application/octet-stream"
+
+       if(data && data?.size > (maxMB * oneMb)){
+        notify("I'm going to go bankrupt bro , 10 MB max")
+      return
+    }
+        if(data){
+                   readFileToBase64(data).then((base64) => {
+        if(typeof base64 == "string"){
+              fileBuffer = base64
+           
+        }
+      }).catch((e) => {
+        console.log(e)
+      })
+        }
+
+          console.log(fileBuffer)
+    }
+  }
+  const handleUpload = async () => {
+  if(fileBuffer){
+   const body = {
+      "content" : fileBuffer,
+      "contentType": contentType
+    }
+    const xmlHttpUpload = new XMLHttpRequest()
+        const randomId = crypto.randomUUID()
+
+        xmlHttpUpload.open("POST" , `https://wqc8yzxgu7.execute-api.us-east-2.amazonaws.com/prod/?id=${fileName}-${randomId}`)
+
+
+    xmlHttpUpload.upload.onprogress = (e) => {
+      setUploadState(Math.round(e.loaded / e.total * 100) )
+      if(e.loaded == e.total){
+        notify("Your content has been uploaded")
+      }
+      console.log(uploadState)
+    }
+    xmlHttpUpload.onload = (e) => {
+      console.log(xmlHttpUpload.response)
+    
+    }
+    xmlHttpUpload.setRequestHeader("Content-Type" , contentType)
+    xmlHttpUpload.send(JSON.stringify(body))
+    
+    
+    
+
+  }else{
+    notify("Unsupported Format")
+  }
+  }
+  return (
+    <div className="bg-gray-200 h-screen flex">
+      <Toaster />
+      <div className="max-w-[700px] mx-auto my-auto items-center space-y-2">
+        <DownloadComponent/>
+        <div className="bg-white  p-8 rounded-lg shadow-lg">
+        <h2 className="text-black font-bold text-[35px] text-center">Matt's Box</h2>
+        <div className="">
+          <DropBox onChangeUp={handleFileChange} onDrag={isDragging} onDragEnter={onDragEnter} onDragLeave={onDragLeave} onDrop={onDrop}/>
+
+        </div >
+        <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 mx-auto block mt-4" onClick={handleUpload} >Upload Anonymously</button>
+        <div className="mt-4 text-gray-600 font-bold">
+          <span className="block text-center">This upload service is available only for anonymous users.</span>
+          <span className="block text-center">
+            Files will be available for 24 hours. Maximum file size: 50MB
+          </span>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        <Progress value={uploadState} className={uploadState <= 0 ? `hidden bg-green-200` : "bg-green-200"}/>
+      </div>
+      </div>
+      
     </div>
   );
 }
