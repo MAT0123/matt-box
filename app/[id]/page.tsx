@@ -1,9 +1,10 @@
 "use client"
 import React, { useEffect } from 'react'
 
-export default function DownloadFile({params}: {params: { id: string}}) {
+export default async function DownloadFile({params}: {params: Promise<{ id: string}>}) {
+    const {id} = await params
+
     const handleDownload = () => {
-        const id = params.id
         const request = new XMLHttpRequest()
         request.open("GET" , `https://wqc8yzxgu7.execute-api.us-east-2.amazonaws.com/prod/?id=${id}`)
         request.responseType = "blob"
@@ -61,14 +62,14 @@ export default function DownloadFile({params}: {params: { id: string}}) {
 
     useEffect(() => {
         console.log(params)
-         if (params?.id) {
+         if (id) {
       handleDownload()
     }
     } , [])
   return (
     <div>
         {
-            !params?.id && "Please provide key"
+            !id && "Please provide key"
         }
     </div>
   )
