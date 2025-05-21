@@ -1,43 +1,12 @@
 "use client"
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 
-export default async function DownloadFile({params}: {params: Promise<{ id: string}>}) {
-    const {id} = await params
-
-    const handleDownload = () => {
-        const request = new XMLHttpRequest()
-        request.open("GET" , `https://wqc8yzxgu7.execute-api.us-east-2.amazonaws.com/prod/?id=${id}`)
-        request.responseType = "blob"
-        request.onload = (e) => {
-            const response = request.response
-            const contentType = request.getResponseHeader("Content-Type") || "application/octet-stream"
-
-            // const binToString = atob(response)
-            // const data = new Uint8Array(binToString.length)
-            // for(let i = 0 ; i < binToString.length  ; i++){
-            //     data[i] = binToString.charCodeAt(i)
-            // }
-            // console.log(binToString)
-            // const blob = new Blob([data] , { type: contentType})
-
-            const extension = contentType.includes('image/jpeg') ? '.jpg' :
-                            contentType.includes('image/png') ? '.png' :
-                            contentType.includes('image/gif') ? '.gif' :
-                            contentType.includes('image/webp') ? '.webp' :
-                            contentType.includes('image/svg') ? '.svg' :
-                            contentType.includes('application/pdf') ? '.pdf' : ''
-            const localURL = URL.createObjectURL(response)
-            const downloadA = document.createElement('a')
-            downloadA.href = localURL
-            downloadA.style.display = "none"
-            downloadA.download = `Mattbox.${extension}`
-            document.body.appendChild(downloadA)
-            
-            downloadA.click()
-        }
-        request.send()
-
-        
+export default function DownloadFile({params}: {params: Promise<{ id: string}>}) {
+    const [id , setId ] = useState("")
+    const takeParams = () => {
+        params.then((e) => {
+            setId(e.id)
+        })
     }
 //     const handleDownload = () => {
 //   const id = params.id
@@ -61,11 +30,53 @@ export default async function DownloadFile({params}: {params: Promise<{ id: stri
 // }
 
     useEffect(() => {
-        console.log(params)
+       takeParams()
+       console.log(id)
+        const handleDownload = () => {
+        const request = new XMLHttpRequest()
+        request.open("GET" , `https://1r2o5wfz44.execute-api.us-east-2.amazonaws.com/prod/?id=${id}`)
+        request.onload = (e) => {
+            const response = request.response
+            const contentType = request.getResponseHeader("Content-Type") || "application/octet-stream"
+            console.log(response)
+        //    const base642 = Buffer.from(base64 , "base64").toString("utf-8")
+
+        //     const base643 = Buffer.from(base642 , "base64").toString("utf-8")
+
+
+  
+
+            const binToString = atob(response)
+            const data = new Uint8Array(binToString.length)
+            for(let i = 0 ; i < binToString.length  ; i++){
+                data[i] = binToString.charCodeAt(i)
+            }
+             const blob = new Blob([data] , { type: contentType})
+
+            const extension = contentType.includes('image/jpeg') ? '.jpg' :
+                            contentType.includes('image/png') ? '.png' :
+                            contentType.includes('image/gif') ? '.gif' :
+                            contentType.includes('image/webp') ? '.webp' :
+                            contentType.includes('image/svg') ? '.svg' :
+                            contentType.includes('application/pdf') ? '.pdf' : ''
+            const localURL = URL.createObjectURL(blob)
+            const downloadA = document.createElement('a')
+            downloadA.href = localURL
+            downloadA.style.display = "none"
+            downloadA.download = `Mattbox.${extension}`
+            document.body.appendChild(downloadA)
+            
+            downloadA.click()
+        }
+        request.send()
+
+        
+    }
+        
          if (id) {
       handleDownload()
     }
-    } , [])
+    } , [params , id , takeParams])
   return (
     <div>
         {

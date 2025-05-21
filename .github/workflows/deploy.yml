@@ -1,0 +1,33 @@
+name: Build and Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Build and push image
+        run: |
+          docker buildx create --use
+          docker buildx build --platform linux/amd64 -t ${{ secrets.DOCKERHUB_USERNAME }}/mattbox:latest . --push
+
+      - name: SSH into VPS and update container
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/mattbox:latest
+            docker stop mattbox || true
+            docker rm mattbox || true
+            docker run -d --name mattbox -p 3000:3000 ${{ secrets.DOCKERHUB_USERNAME }}/mattbox:latest

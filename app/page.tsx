@@ -33,15 +33,13 @@ function DropBox({ onChangeUp , onDrag , onDragEnter , onDragLeave , onDrop}: {o
     </div>
   </div>)
 }
-export function DownloadComponent() {
+ function DownloadComponent() {
   const [id , setId] = useState("")
   const router = useRouter()
   function goToDownloadPage(){
     router.push(`/${id}`)
   }
-  useEffect(() => {
-    console.log("id value is", id)
-  } , [])
+
   return (
     <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
       <h2 className="text-xl font-semibold text-gray-800 mb-4">Download File</h2>
@@ -82,11 +80,13 @@ export function DownloadComponent() {
 export default function Home() {
   const [isDragging , setIsDragging] = useState(false)
   const [uploadState , setUploadState] = useState(0)
+  const [isReady , setisReady] = useState(false)
+
   const notify = (message:string) => toast(message);
 
-  var fileBuffer:string
-  var fileName:String
-  var contentType:string = ""
+ const [fileBuffer, setFileBuffer] = useState("");
+const [fileName, setFileName] = useState("");
+const [contentType, setContentType] = useState("");
   function readFileToBase64(file:File){
     return new Promise((resolve ,reject) => {
         const fileReader = new FileReader()
@@ -113,14 +113,18 @@ export default function Home() {
         notify("I'm going to go bankrupt bro , 10 MB max")
       return
     }
+    notify("Loading data... , please wait")
     if(file){
-      fileName = file.name
-      contentType = file.type
+      setFileName(file.name)
+      setContentType(file.type)
       
       readFileToBase64(file).then((base64) => {
 
         if(typeof base64 == "string"){
-              fileBuffer = base64
+              setFileBuffer(base64)
+              setisReady(true)
+              console.log(fileBuffer)
+              notify("Data loaded")
 
         }
       }).catch((e) => {
@@ -155,17 +159,20 @@ export default function Home() {
       const data = e.dataTransfer.files.item(0)
        const maxMB = 10
     const oneMb =  1024 * 1024
-          contentType = data?.type || "application/octet-stream"
+          setContentType( data?.type || "application/octet-stream")
 
        if(data && data?.size > (maxMB * oneMb)){
         notify("I'm going to go bankrupt bro , 10 MB max")
       return
     }
+
         if(data){
+          
                    readFileToBase64(data).then((base64) => {
-        if(typeof base64 == "string"){
-              fileBuffer = base64
-           
+          if(typeof base64 == "string"){
+              setFileBuffer(base64)
+              setisReady(true)
+              
         }
       }).catch((e) => {
         console.log(e)
@@ -181,31 +188,32 @@ export default function Home() {
       "content" : fileBuffer,
       "contentType": contentType
     }
+      const randomId =  crypto.randomUUID()
+
     const xmlHttpUpload = new XMLHttpRequest()
-        const randomId = crypto.randomUUID()
-
-        xmlHttpUpload.open("POST" , `https://wqc8yzxgu7.execute-api.us-east-2.amazonaws.com/prod/?id=${fileName}-${randomId}`)
-
-
+        xmlHttpUpload.open("POST" , ` https://1r2o5wfz44.execute-api.us-east-2.amazonaws.com/prod/?id=${randomId}`)
     xmlHttpUpload.upload.onprogress = (e) => {
       setUploadState(Math.round(e.loaded / e.total * 100) )
       if(e.loaded == e.total){
-        notify("Your content has been uploaded")
+        toast(`Uploaded , Your file is is ${randomId}` , {
+            
+            duration: 5000
+        })
+        
       }
       console.log(uploadState)
     }
     xmlHttpUpload.onload = (e) => {
       console.log(xmlHttpUpload.response)
-    
+      
     }
-    xmlHttpUpload.setRequestHeader("Content-Type" , contentType)
+    xmlHttpUpload.onloadend = (e) => {
+      setisReady(false)
+    }
+    xmlHttpUpload.setRequestHeader("Content-Type" , "application/json")
     xmlHttpUpload.send(JSON.stringify(body))
-    
-    
-    
-
   }else{
-    notify("Unsupported Format")
+    notify("Loading file , please wait")
   }
   }
   return (
@@ -219,7 +227,7 @@ export default function Home() {
           <DropBox onChangeUp={handleFileChange} onDrag={isDragging} onDragEnter={onDragEnter} onDragLeave={onDragLeave} onDrop={onDrop}/>
 
         </div >
-        <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 mx-auto block mt-4" onClick={handleUpload} >Upload Anonymously</button>
+        <button className={isReady ? "px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 mx-auto block mt-4" : "px-4 py-2 bg-gray-600 text-white rounded  mx-auto block mt-4"} onClick={handleUpload} disabled={isReady == false ? true : false} >Upload Anonymously</button>
         <div className="mt-4 text-gray-600 font-bold">
           <span className="block text-center">This upload service is available only for anonymous users.</span>
           <span className="block text-center">
