@@ -87,6 +87,7 @@ export default function Home() {
  const [fileBuffer, setFileBuffer] = useState("");
 const [fileName, setFileName] = useState("");
 const [contentType, setContentType] = useState("");
+const [extension, setExtension] = useState("");
   function readFileToBase64(file:File){
     return new Promise((resolve ,reject) => {
         const fileReader = new FileReader()
@@ -117,7 +118,7 @@ const [contentType, setContentType] = useState("");
     if(file){
       setFileName(file.name)
       setContentType(file.type)
-      
+      setExtension(file.type)
       readFileToBase64(file).then((base64) => {
 
         if(typeof base64 == "string"){
@@ -189,13 +190,22 @@ const [contentType, setContentType] = useState("");
       "contentType": contentType
     }
       const randomId =  crypto.randomUUID()
+      const mimeToExt: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'application/pdf': 'pdf',
+  'image/webp': 'webp',
+  // add more mappings if needed
+};
 
+const ext = mimeToExt[extension] || 'bin';
     const xmlHttpUpload = new XMLHttpRequest()
-        xmlHttpUpload.open("POST" , ` https://1r2o5wfz44.execute-api.us-east-2.amazonaws.com/prod/?id=${randomId}`)
+       console.log(extension)
+        xmlHttpUpload.open("POST" , `https://jieycntrxe.execute-api.us-east-2.amazonaws.com/prod?id=${randomId}.${ext}`)
     xmlHttpUpload.upload.onprogress = (e) => {
       setUploadState(Math.round(e.loaded / e.total * 100) )
       if(e.loaded == e.total){
-        toast(`Uploaded , Your file is is ${randomId}` , {
+        toast(`Uploaded , Your file is is ${randomId}.${ext}` , {
             
             duration: 5000
         })

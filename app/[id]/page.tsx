@@ -32,9 +32,17 @@ export default function DownloadFile({params}: {params: Promise<{ id: string}>})
     useEffect(() => {
        takeParams()
        console.log(id)
+        const previewImage = () => {
+            const downloadA = document.createElement('a')
+            downloadA.href = `https://d2w9ks2xmlai7k.cloudfront.net/${id}`
+            downloadA.style.display = "none"
+            document.body.appendChild(downloadA)
+            downloadA.target = "_blank"
+            downloadA.click()
+        }
         const handleDownload = () => {
         const request = new XMLHttpRequest()
-        request.open("GET" , `https://1r2o5wfz44.execute-api.us-east-2.amazonaws.com/prod/?id=${id}`)
+        request.open("GET" , `https://jieycntrxe.execute-api.us-east-2.amazonaws.com/prod/?id=${id}`)
         request.onload = (e) => {
             const response = request.response
             const contentType = request.getResponseHeader("Content-Type") || "application/octet-stream"
@@ -74,6 +82,8 @@ export default function DownloadFile({params}: {params: Promise<{ id: string}>})
     }
         
          if (id) {
+                  previewImage()
+
       handleDownload()
     }
     } , [params , id , takeParams])
